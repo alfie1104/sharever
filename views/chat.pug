@@ -1,0 +1,119 @@
+extends chatLayout
+
+block content
+    div(class='ui tertiary inverted brown segment')
+        h1(class='ui header')= title
+        a#exit-btn(href='/chatmain') 나가기
+            i(class='long arrow big left icon')
+    div(class='ui divider')
+    div(class='ui segment')
+        #chat-list
+            for chat in chats
+                if chat.userId === user
+                    .mine
+                        div= chat.user.nick
+                        if chat.gif
+                            img(src='/gif/' + chat.gif)
+                        else
+                            div= chat.chat
+                else if chat.userId ==='system'
+                    .system
+                        div= chat.chat
+                else
+                    .other
+                        div= chat.user.nick
+                        if chat.gif
+                            img(src='/gif/' + chat.gif)
+                        else
+                            div= chat.chat
+    form#chat-form(action='/chat' method='post' enctype='multipart/form-data')
+        div(class='ui fluid labeled input focus')
+            label(class='ui label' for='gif')
+                i(class='image icon')
+            input#gif(type='file' name='gif' accept='image/gif')
+            input#chat(type='text' name='chat')
+            button(class='ui brown right floated tiny button' type='submit') Send
+    script(src='/socket.io/socket.io.js')
+    script.
+        var socket = io.connect('http://35.197.54.136/chat', {
+            path: '/socket.io',
+            query : {
+                nick : '#{nick}'
+            }
+        });
+        socket.on('join', function(data){
+            var div = document.createElement('div');
+            div.classList.add('system');
+            var chat = document.createElement('div');
+            div.textContent = data.chat;
+            document.querySelector('#chat-list').appendChild(div);
+            document.querySelector('#chat-list').scrollTop = document.querySelector('#chat-list').scrollHeight;
+
+        });
+        socket.on('exit', function(data){
+            var div = document.createElement('div');
+            div.classList.add('system');
+            var chat = document.createElement('div');
+            div.textContent = data.chat;
+            div.appendChild(chat);
+            document.querySelector('#chat-list').appendChild(div);
+            document.querySelector('#chat-list').scrollTop = document.querySelector('#chat-list').scrollHeight;
+        });
+        socket.on('chat', function(data){
+            var div = document.createElement('div');
+            if(data.userId.toString() === '#{user}'){
+                div.classList.add('mine');
+            }else{
+                div.classList.add('other');
+            }
+            var name = document.createElement('div');
+            name.textContent = data.user.nick;
+            div.appendChild(name);
+            if(data.chat){
+                var chat = document.createElement('div');
+                chat.textContent = data.chat;
+                div.appendChild(chat);
+            }else{
+                var gif = document.createElement('img');
+                gif.src = '/gif/' + data.gif;
+                div.appendChild(gif);
+            }
+            div.style.color = data.user;
+            document.querySelector('#chat-list').appendChild(div);
+            document.querySelector('#chat-list').scrollTop = document.querySelector('#chat-list').scrollHeight;
+        });
+        document.querySelector('#chat-form').addEventListener('submit', function(e){
+            e.preventDefault();
+            if(e.target.chat.value){
+                var xhr = new XMLHttpRequest();
+                xhr.onload = function(){
+                    if(xhr.status === 200){
+                        e.target.chat.value = '';
+                        document.querySelector('#chat-list').scrollTop = document.querySelector('#chat-list').scrollHeight;
+                    }else{
+                        console.error(xhr.responseText);
+                    }
+                };
+                xhr.open('POST', '/chatmain/room/#{room.id}/chat');
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.send(JSON.stringify({chat: this.chat.value}));
+                e.target.chat.focus();
+            }
+        });
+        document.querySelector('#gif').addEventListener('change', function(e){
+            var formData = new FormData();
+            var xhr = new XMLHttpRequest();
+            console.log(e.target.files);
+            formData.append('gif', e.target.files[0]);
+            xhr.onload = function() {
+                if(xhr.status === 200){
+                    e.target.file = null;
+                    document.querySelector('#chat-list').scrollTop = document.querySelector('#chat-list').scrollHeight;
+                }else{
+                    console.error(xhr.responseText);
+                }
+            };
+            xhr.open('POST', '/chatmain/room/#{room._id}/gif');
+            xhr.send(formData);
+            e.target.chat.focus();
+        });

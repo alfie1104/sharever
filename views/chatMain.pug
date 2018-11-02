@@ -1,0 +1,80 @@
+extends chatLayout
+
+block content
+    div(class='ui tertiary inverted black segment')
+        h1(class='ui header') Sharever - Chatroom
+    div(class='ui divider')
+    div(class='ui segment')
+        table(class='ui selectable celled small table')
+            thead(class='center aligned')
+                tr
+                    th 방 제목
+                    th 종류
+                    th 허용 인원
+                    th 방장
+                    th
+            tbody(class='center aligned')
+                for room in rooms
+                    tr(data-id=room._id)
+                        td= room.title
+                        td= room.password? '비밀방' : '공개방'
+                        td= room.max
+                        td= room.user.nick
+                        -var password = room.password ? 'true' : 'false';
+                        td: button(data-password=password data-id=room.id class='join-btn ui tiny grey button') 입장
+                tr
+                    td(colspan='5' class='right aligned')
+                        a(class='ui olive button' href='/chatmain/room') 채팅방 생성
+        a(class='ui green icon button' href='/')
+            i(class='home icon')
+        .error-message= error
+       
+    script(src='/socket.io/socket.io.js')
+    script.
+        var socket = io.connect('http://35.197.54.136/room', {
+            path: '/socket.io'
+        })
+        socket.on('newRoom', function(data) {
+            var tr = document.createElement('tr');
+            var td = document.createElement('td');
+            td.textContent = data.title;
+            tr.appendChild(td);
+            td = document.createElement('td');
+            td.textContent = data.password ? '비밀방' : '공개방';
+            tr.appendChild(td);
+            td = document.createElement('td');
+            td.textContent = data.max;
+            tr.appendChild(td);
+            td = document.createElement('td');
+            td.textContent = data.userId;
+            tr.appendChild(td);
+            td = document.createElement('td');
+            var button = document.createElement('button');
+            button.textContent = '입장';
+            button.dataset.password = data.password ? 'true' : 'false';
+            button.dataset.id = data.id;
+            button.addEventListener('click', addBtnEvent);
+            td.appendChild(button);
+            tr.appendChild(td);
+            tr.dataset.id = data.id;
+            document.querySelector('table tbody').appendChild(tr);
+        });
+        socket.on('removeRoom', function(data){
+            Array.prototype.forEach.call(document.querySelectorAll('tbody tr'), function(tr){
+                if(tr.dataset.id === data){
+                    tr.parentNode.removeChild(tr);
+                }
+            });
+        });
+        function addBtnEvent(e){
+            if(e.target.dataset.password === 'true'){
+                const password = prompt('비밀번호를 입력하세요');
+                location.href = '/chatmain/room/' + e.target.dataset.id + '?password=' + password;
+            }else{
+                location.href = '/chatmain/room/' + e.target.dataset.id;
+            }
+        }
+
+        Array.prototype.forEach.call(document.querySelectorAll('.join-btn'), function(btn){
+            btn.addEventListener('click', addBtnEvent);
+        });

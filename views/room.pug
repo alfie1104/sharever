@@ -1,0 +1,19 @@
+extends chatLayout
+
+block content
+    div(class='ui segment')
+        h1(class='ui header') 채팅방 생성
+    div(class='ui divider')
+    div(class='ui segment')
+        form(action='/chatmain/room' method='post' class='ui form')
+            div(class='field')
+                label 방 제목
+                input(name='title' placeholder='방 제목')
+            div(class='field')
+                label 수용 인원
+                input(name='max' placeholder='수용 인원(최소 2명)' min='2' value='10')
+            div(class='field')
+                label 비밀번호
+                input(name='password' type='password' placeholder='비밀번호(없으면 공개방)')
+            div(class='field')
+                button(type='submit' class='ui button') 생성

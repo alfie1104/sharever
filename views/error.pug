@@ -1,0 +1,7 @@
+extends chatLayout
+
+block content
+  h1= message
+  h2= error.status
+  h1 Error
+  pre #{error.stack}
